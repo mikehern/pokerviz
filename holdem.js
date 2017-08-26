@@ -1,6 +1,6 @@
 //Create Texas Hold'em-specific set (no wilds and suits have no value.)
 
-var names = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
+var names = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A']
 
 var suits = ['d','c','h','s']
 
@@ -43,33 +43,20 @@ function shuffle(deck) {
   return deck;
 }
 
-//Hands testing. Will eventually create testing suite with assertions.
-
-var coordinatedStraight //3c, 4d, 5s, 6s, 7h
-var uncoordinatedStraight //4c, 3d, 7d, 6s, 5s
-var aceHighStraight //Ad, 10d, Kd, Qs, Jh
-var aceLowStraight //3d, 4d, As, 2d, 5d
-var straightFlush //10c, Jc, Qc, Ac, Kc
-var fullHouse //5s, 5c, 5d, 2c, 2s
-var quads //10d, 10c, 10h, 10s, Ac
-var trips //5h, 5d, 5c, 10c, Kc
-var twoPairs //2d, 2s, 7d, 7s, Ah
-var pair //Kd, Kc, 2s, 8s, 5c
-
 //Identify hands within a checking set.
 
 function isStraight(fiveCardSet) {
-  //Need to handle ace case and set value to 0
   var sortedValues = fiveCardSet
     .map(item => item.value)
     .sort((a, b) => a - b);
+  var checkLowStraight = (sortedValues[0] === 1 && sortedValues[1] === 2 && sortedValues[2] === 3 && sortedValues[3] === 4 && sortedValues[4] === 13);
   var checkIncreasing = sortedValues
     .reduce( (acc, item) => 
       (item + 1 === acc) ? item : false, );
   var checkDecreasing = sortedValues
     .reduce( (acc, item) => 
       (item - 1 === acc) ? item : false, );
-  return !!checkIncreasing || !!checkDecreasing;
+  return !!checkIncreasing || !!checkDecreasing || !!checkLowStraight;
 }
 
 function isFlush(fiveCardSet) {
@@ -79,28 +66,90 @@ function isFlush(fiveCardSet) {
 }
 
 function isStraightFlush(fiveCardSet) {
-
+  return isFlush(fiveCardSet) && isStraight(fiveCardSet);
 }
 
-function isFourOfAKind(fourCardSet) {
-
+function isFourOfAKind(fiveCardSet) {
+  var result = false;
+  var sorted = fiveCardSet
+    .map(item => item.value)
+    .sort((a, b) => a - b);
+  for (var i = 0; i < sorted.length - 3; i++) {
+    if (sorted[i] === sorted[i + 1] && sorted[i + 1] === sorted[i + 2] && sorted[i + 2] === sorted[i + 3]) {
+      result = true;
+    }
+  }
+  return result;
 }
 
 function isFullHouse(fiveCardSet) {
-
+  var counter = 0;
+  var sorted = fiveCardSet
+    .map(item => item.value)
+    .sort((a, b) => a - b);
+  var sortedCopy = sorted.slice();
+  for (var i = 0; i < sorted.length - 2; i++) {
+    if (threeCardSet(sorted[i], sorted[i + 1], sorted[i + 2])) {
+      counter++;
+      sortedCopy.splice(i, 3);
+    }
+  }
+  return counter === 1 && sortedCopy[0] === sortedCopy[1];
 }
 
-function isThreeOfAKind(threeCardSet) {
-
+function isThreeOfAKindOnly(fiveCardSet) {
+  var counter = 0;
+  var sorted = fiveCardSet
+    .map(item => item.value)
+    .sort((a, b) => a - b);
+  var sortedCopy = sorted.slice();
+  for (var i = 0; i < sorted.length - 2; i++) {
+    if (threeCardSet(sorted[i], sorted[i + 1], sorted[i + 2])) {
+      counter++;
+      sortedCopy.splice(i, 3);
+    }
+  }
+  return counter === 1 && sortedCopy[0] !== sortedCopy[1];
 }
 
-function isTwoPairs(fourCardSet) {
-  
+function isTwoPairs(fiveCardSet) {
+  var sorted = fiveCardSet
+    .map(item => item.value)
+    .sort((a, b) => a - b);
+  var reduced = sorted.reduce(function(acc, item) {
+    if (acc.indexOf(item) < 0) {
+      acc.push(item);
+    }
+    return acc;
+  }, []);
+  return reduced.length === 3 && !isThreeOfAKindOnly(fiveCardSet);  
 }
 
-function isPair(twoCardSet) {
-
+function isPairOnly(fiveCardSet) {
+  var counter = 0;
+  var sorted = fiveCardSet
+    .map(item => item.value)
+    .sort((a, b) => a - b);
+  for (var i = 0; i < sorted.length - 1; i++) {
+    if (twoCardPair(sorted[i], sorted[i + 1])) {
+      counter++;
+    }
+  }
+  return counter === 1;
 }
+
+function twoCardPair(first, second) {
+  return first === second;
+}
+
+function threeCardSet(first, second, third) {
+  return first === second && second === third;
+}
+
+function fourCardSet(first, second, third, fourth) {
+  return first === second && second === third && third === fourth;
+}
+
 
 //Mechanics
 
